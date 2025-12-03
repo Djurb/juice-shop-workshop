@@ -59,7 +59,7 @@ interface DataErasureRequestParams {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
-router.post('/', async (req: Request<Record<string, unknown>, Record<string, unknown>, DataErasureRequestParams>, res: Response, next: NextFunction): Promise<void> => {
+router.post('/', fileOperationLimiter, async (req: Request<Record<string, unknown>, Record<string, unknown>, DataErasureRequestParams>, res: Response, next: NextFunction): Promise<void> => {
   const loggedInUser = insecurity.authenticatedUsers.get(req.cookies.token)
   if (!loggedInUser) {
     next(new Error('Blocked illegal activity by ' + req.socket.remoteAddress))
