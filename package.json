@@ -202,7 +202,7 @@
     "@types/express-jwt": "^6.0.0",
     "@types/frisby": "^2.0.10",
     "@types/fs-extra": "^9.0.6",
-    "@types/glob": "^10.3.10",
+    "@types/glob": "^8.1.0",
     "@types/graceful-fs": "^4.1.5",
     "@types/i18n": "^0.12.0",
     "@types/js-yaml": "^3.12.6",
