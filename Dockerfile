@@ -1,4 +1,5 @@
-FROM node:20-buster as installer
+# Use a secure, supported Node.js base image
+FROM node:20.19.4-bookworm as installer
 COPY . /juice-shop
 WORKDIR /juice-shop
 RUN npm i -g typescript ts-node
@@ -20,15 +21,17 @@ RUN npm install -g @cyclonedx/cyclonedx-npm@$CYCLONEDX_NPM_VERSION
 RUN npm run sbom
 
 # workaround for libxmljs startup error
-FROM node:20-buster as libxmljs-builder
+FROM node:20.19.4-bookworm as libxmljs-builder
 WORKDIR /juice-shop
-RUN apt-get update && apt-get install -y build-essential python3
+# Upgrade system packages and install build tools
+RUN apt-get update && apt-get upgrade -y && apt-get install -y build-essential python3 && rm -rf /var/lib/apt/lists/*
 COPY --from=installer /juice-shop/node_modules ./node_modules
 RUN rm -rf node_modules/libxmljs2/build && \
   cd node_modules/libxmljs2 && \
   npm run build
 
-FROM gcr.io/distroless/nodejs20-debian11
+# Use a secure distroless image for final stage
+FROM gcr.io/distroless/nodejs20-debian12
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.opencontainers.image.licenses="MIT"
@@ -41,3 +44,5 @@ COPY --chown=65532:0 --from=libxmljs-builder /juice-shop/node_modules/libxmljs2 
 USER 65532
 EXPOSE 3000
 CMD ["/juice-shop/build/app.js"]
+
+# End of Dockerfile
