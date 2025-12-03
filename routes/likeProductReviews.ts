@@ -13,7 +13,11 @@ const security = require('../lib/insecurity')
 
 module.exports = function productReviews () {
   return (req: Request, res: Response, next: NextFunction) => {
-    const id = req.body.id
+    const id = String(req.body.id).replace(/[^a-f0-9]/gi, '').substring(0, 24) // Sanitize MongoDB ObjectId
+    if (!id || id.length !== 24) {
+      res.status(400).json({ error: 'Invalid review ID' })
+      return
+    }
     const user = security.authenticatedUsers.from(req)
     db.reviews.findOne({ _id: id }).then((review: Review) => {
       if (!review) {
