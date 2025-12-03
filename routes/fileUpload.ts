@@ -11,7 +11,7 @@ import path from 'path'
 import * as utils from '../lib/utils'
 
 const challenges = require('../data/datacache').challenges
-const libxml = require('libxmljs2')
+const { XMLParser } = require('fast-xml-parser')
 const vm = require('vm')
 const unzipper = require('unzipper')
 
@@ -81,10 +81,13 @@ function handleXmlUpload ({ file }: Request, res: Response, next: NextFunction) 
     if (((file?.buffer) != null) && !utils.disableOnContainerEnv()) { // XXE attacks in Docker/Heroku containers regularly cause "segfault" crashes
       const data = file.buffer.toString()
       try {
-        const sandbox = { libxml, data }
-        vm.createContext(sandbox)
-        const xmlDoc = vm.runInContext('libxml.parseXml(data, { noblanks: true, noent: true, nocdata: true })', sandbox, { timeout: 2000 })
-        const xmlString = xmlDoc.toString(false)
+        const parser = new XMLParser({
+          ignoreAttributes: false,
+          parseTagValue: true,
+          trimValues: true
+        })
+        const xmlDoc = parser.parse(data)
+        const xmlString = JSON.stringify(xmlDoc)
         challengeUtils.solveIf(challenges.xxeFileDisclosureChallenge, () => { return (utils.matchesEtcPasswdFile(xmlString) || utils.matchesSystemIniFile(xmlString)) })
         res.status(410)
         next(new Error('B2B customer complaints via file upload have been deprecated for security reasons: ' + utils.trunc(xmlString, 400) + ' (' + file.originalname + ')'))
