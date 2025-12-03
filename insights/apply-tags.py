@@ -1,4 +1,5 @@
 import requests
+import re
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -9,7 +10,14 @@ parser.add_argument("--origin", dest="origin", help="SCM type. Possible values: 
 args = parser.parse_args()
 
 SNYK_TOKEN = args.snyk_token
+# Validate org_id to prevent SSRF - must be UUID format
+if not re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', args.org_id):
+    raise ValueError("Invalid org_id format. Must be a valid UUID.")
 ORG_ID = args.org_id
+# Validate origin to prevent SSRF
+VALID_ORIGINS = ['github', 'github-enterprise', 'azure-repos', 'bitbucket', 'gitlab']
+if args.origin not in VALID_ORIGINS:
+    raise ValueError(f"Invalid origin. Must be one of: {', '.join(VALID_ORIGINS)}")
 ORIGIN = args.origin
 
 BASE_URL = "https://api.snyk.io"
