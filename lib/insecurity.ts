@@ -19,8 +19,15 @@ import * as utils from './utils'
 // @ts-expect-error FIXME no typescript definitions for z85 :(
 import * as z85 from 'z85'
 
-export const publicKey = fs ? fs.readFileSync('encryptionkeys/jwt.pub', 'utf8') : 'placeholder-public-key'
+// Load public key from file or environment variable
+export const publicKey = process.env.PUBLIC_KEY || (fs ? fs.readFileSync('encryptionkeys/jwt.pub', 'utf8') : '')
+if (!publicKey) {
+  throw new Error('PUBLIC_KEY environment variable or jwt.pub file must be configured')
+}
 const privateKey = process.env.PRIVATE_KEY
+if (!privateKey) {
+  throw new Error('PRIVATE_KEY environment variable must be configured')
+}
 
 interface ResponseWithUser {
   status: string
