@@ -19,9 +19,11 @@ module.exports = function productReviews () {
       return
     }
     const user = security.authenticatedUsers.from(req) // vuln-code-snippet vuln-line forgedReviewChallenge
+    // Sanitize message to ensure it's a string and remove MongoDB operators
+    const sanitizedMessage = typeof req.body.message === 'string' ? req.body.message : String(req.body.message)
     db.reviews.update( // vuln-code-snippet neutral-line forgedReviewChallenge
       { _id: id }, // Fixed: Using sanitized ID to prevent NoSQL injection
-      { $set: { message: req.body.message } },
+      { $set: { message: sanitizedMessage } },
       { multi: true } // vuln-code-snippet vuln-line noSqlReviewsChallenge
     ).then(
       (result: { modified: number, original: Array<{ author: any }> }) => {

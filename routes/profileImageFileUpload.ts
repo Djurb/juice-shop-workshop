@@ -27,7 +27,15 @@ module.exports = function fileUpload () {
         if (loggedInUser) {
           const sanitizedId = String(loggedInUser.data.id).replace(/[^0-9]/g, '') // Sanitize user ID
           const sanitizedExt = String(uploadedFileType.ext).replace(/[^a-z]/gi, '').substring(0, 10) // Sanitize extension
-          fs.open(`frontend/dist/frontend/assets/public/images/uploads/${sanitizedId}.${sanitizedExt}`, 'w', function (err, fd) {
+          const uploadsDir = path.resolve('frontend/dist/frontend/assets/public/images/uploads')
+          const targetPath = path.join(uploadsDir, `${sanitizedId}.${sanitizedExt}`)
+          // Validate path stays within uploads directory
+          if (!targetPath.startsWith(uploadsDir)) {
+            res.status(400)
+            next(new Error('Invalid file path'))
+            return
+          }
+          fs.open(targetPath, 'w', function (err, fd) {
             if (err != null) logger.warn('Error opening file: ' + err.message)
             // @ts-expect-error FIXME buffer has unexpected type
             fs.write(fd, buffer, 0, buffer.length, null, function (err) {

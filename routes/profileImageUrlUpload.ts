@@ -19,10 +19,26 @@ module.exports = function profileImageUrlUpload () {
       // Validate URL to prevent SSRF
       try {
         const parsedUrl = new URL(url)
+        const hostname = parsedUrl.hostname.toLowerCase()
+        
+        // Block localhost variations
         const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254']
-        if (blockedHosts.some(host => parsedUrl.hostname.includes(host))) {
+        if (blockedHosts.some(host => hostname.includes(host))) {
           res.status(400).json({ error: 'Invalid URL' })
           return
+        }
+        
+        // Block private IP ranges
+        const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+        if (ipv4Match) {
+          const octets = ipv4Match.slice(1, 5).map(Number)
+          // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8
+          if (octets[0] === 10 || octets[0] === 127 ||
+              (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+              (octets[0] === 192 && octets[1] === 168)) {
+            res.status(400).json({ error: 'Invalid URL' })
+            return
+          }
         }
       } catch (e) {
         res.status(400).json({ error: 'Invalid URL format' })

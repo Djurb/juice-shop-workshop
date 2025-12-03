@@ -80,8 +80,10 @@ export const checkCorrectFix = () => async (req: Request<Record<string, unknown>
     })
   } else {
     let explanation
-    const infoPath = './data/static/codefixes/' + key + '.info.yml'
-    if (fs.existsSync(infoPath) && !infoPath.includes('..')) {
+    const basePath = path.resolve('./data/static/codefixes/')
+    const infoPath = path.resolve('./data/static/codefixes/', key + '.info.yml')
+    // Validate path stays within codefixes directory
+    if (fs.existsSync(infoPath) && !infoPath.includes('..') && infoPath.startsWith(basePath)) {
       const codingChallengeInfos = yaml.load(fs.readFileSync(infoPath, 'utf8'))
       const selectedFixInfo = codingChallengeInfos?.fixes.find(({ id }: { id: number }) => id === selectedFix + 1)
       if (selectedFixInfo?.explanation) explanation = res.__(selectedFixInfo.explanation)

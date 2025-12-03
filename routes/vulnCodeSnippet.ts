@@ -94,8 +94,10 @@ exports.checkVulnLines = () => async (req: Request<Record<string, unknown>, Reco
   const selectedLines: number[] = req.body.selectedLines
   const verdict = getVerdict(vulnLines, neutralLines, selectedLines)
   let hint
-  const infoPath = './data/static/codefixes/' + key + '.info.yml'
-  if (fs.existsSync(infoPath) && !infoPath.includes('..')) {
+  const basePath = path.resolve('./data/static/codefixes/')
+  const infoPath = path.resolve('./data/static/codefixes/', key + '.info.yml')
+  // Validate path stays within codefixes directory
+  if (fs.existsSync(infoPath) && !infoPath.includes('..') && infoPath.startsWith(basePath)) {
     const codingChallengeInfos = yaml.load(fs.readFileSync(infoPath, 'utf8'))
     if (codingChallengeInfos?.hints) {
       if (accuracy.getFindItAttempts(key) > codingChallengeInfos.hints.length) {
