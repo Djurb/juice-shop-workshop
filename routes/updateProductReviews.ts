@@ -13,10 +13,17 @@ const security = require('../lib/insecurity')
 // vuln-code-snippet start noSqlReviewsChallenge forgedReviewChallenge
 module.exports = function productReviews () {
   return (req: Request, res: Response, next: NextFunction) => {
+    const id = String(req.body.id).replace(/[^a-f0-9]/gi, '').substring(0, 24) // Sanitize MongoDB ObjectId
+    if (!id || id.length !== 24) {
+      res.status(400).json({ error: 'Invalid review ID' })
+      return
+    }
     const user = security.authenticatedUsers.from(req) // vuln-code-snippet vuln-line forgedReviewChallenge
+    // Sanitize message to ensure it's a string and remove MongoDB operators
+    const sanitizedMessage = typeof req.body.message === 'string' ? req.body.message : String(req.body.message)
     db.reviews.update( // vuln-code-snippet neutral-line forgedReviewChallenge
-      { _id: req.body.id }, // vuln-code-snippet vuln-line noSqlReviewsChallenge forgedReviewChallenge
-      { $set: { message: req.body.message } },
+      { _id: id }, // Fixed: Using sanitized ID to prevent NoSQL injection
+      { $set: { message: sanitizedMessage } },
       { multi: true } // vuln-code-snippet vuln-line noSqlReviewsChallenge
     ).then(
       (result: { modified: number, original: Array<{ author: any }> }) => {

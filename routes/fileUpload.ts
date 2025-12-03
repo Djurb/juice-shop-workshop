@@ -11,7 +11,7 @@ import path from 'path'
 import * as utils from '../lib/utils'
 
 const challenges = require('../data/datacache').challenges
-const libxml = require('libxmljs2')
+const { XMLParser } = require('fast-xml-parser')
 const vm = require('vm')
 const unzipper = require('unzipper')
 
@@ -35,11 +35,17 @@ function handleZipFileUpload ({ file }: Request, res: Response, next: NextFuncti
             fs.createReadStream(tempFile)
               .pipe(unzipper.Parse())
               .on('entry', function (entry: any) {
-                const fileName = entry.path
-                const absolutePath = path.resolve('uploads/complaints/' + fileName)
+                const fileName = path.basename(entry.path) // Sanitize to prevent Zip Slip
+                const absolutePath = path.resolve('uploads/complaints/', fileName)
+                const uploadsDir = path.resolve('uploads/complaints/')
+                // Verify the resolved path is within the uploads directory
+                if (!absolutePath.startsWith(uploadsDir)) {
+                  entry.autodrain()
+                  return
+                }
                 challengeUtils.solveIf(challenges.fileWriteChallenge, () => { return absolutePath === path.resolve('ftp/legal.md') })
                 if (absolutePath.includes(path.resolve('.'))) {
-                  entry.pipe(fs.createWriteStream('uploads/complaints/' + fileName).on('error', function (err) { next(err) }))
+                  entry.pipe(fs.createWriteStream(absolutePath).on('error', function (err) { next(err) }))
                 } else {
                   entry.autodrain()
                 }
@@ -75,10 +81,13 @@ function handleXmlUpload ({ file }: Request, res: Response, next: NextFunction) 
     if (((file?.buffer) != null) && !utils.disableOnContainerEnv()) { // XXE attacks in Docker/Heroku containers regularly cause "segfault" crashes
       const data = file.buffer.toString()
       try {
-        const sandbox = { libxml, data }
-        vm.createContext(sandbox)
-        const xmlDoc = vm.runInContext('libxml.parseXml(data, { noblanks: true, noent: true, nocdata: true })', sandbox, { timeout: 2000 })
-        const xmlString = xmlDoc.toString(false)
+        const parser = new XMLParser({
+          ignoreAttributes: false,
+          parseTagValue: true,
+          trimValues: true
+        })
+        const xmlDoc = parser.parse(data)
+        const xmlString = JSON.stringify(xmlDoc)
         challengeUtils.solveIf(challenges.xxeFileDisclosureChallenge, () => { return (utils.matchesEtcPasswdFile(xmlString) || utils.matchesSystemIniFile(xmlString)) })
         res.status(410)
         next(new Error('B2B customer complaints via file upload have been deprecated for security reasons: ' + utils.trunc(xmlString, 400) + ' (' + file.originalname + ')'))

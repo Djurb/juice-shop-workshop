@@ -11,7 +11,7 @@ import jwt, { type JwtPayload, type VerifyErrors } from 'jsonwebtoken'
 import challengeUtils = require('../lib/challengeUtils')
 import logger from '../lib/logger'
 import config from 'config'
-import download from 'download'
+import axios from 'axios'
 import * as utils from '../lib/utils'
 import { isString } from 'lodash'
 import { Bot } from 'juicy-chat-bot'
@@ -28,8 +28,8 @@ export let bot: Bot | null = null
 export async function initialize () {
   if (utils.isUrl(trainingFile)) {
     const file = utils.extractFilename(trainingFile)
-    const data = await download(trainingFile)
-    await fs.writeFile('data/chatbot/' + file, data)
+    const response = await axios.get(trainingFile, { responseType: 'arraybuffer' })
+    await fs.writeFile('data/chatbot/' + file, response.data)
   }
 
   await fs.copyFile(

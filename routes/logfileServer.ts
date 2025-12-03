@@ -8,9 +8,9 @@ import { type Request, type Response, type NextFunction } from 'express'
 
 module.exports = function serveLogFiles () {
   return ({ params }: Request, res: Response, next: NextFunction) => {
-    const file = params.file
+    const file = path.basename(params.file) // Sanitize to prevent path traversal
 
-    if (!file.includes('/')) {
+    if (!file.includes('/') && !file.includes('..')) {
       res.sendFile(path.resolve('logs/', file))
     } else {
       res.status(403)

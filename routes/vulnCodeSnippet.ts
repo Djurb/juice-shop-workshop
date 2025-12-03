@@ -72,7 +72,11 @@ export const getVerdict = (vulnLines: number[], neutralLines: number[], selected
 }
 
 exports.checkVulnLines = () => async (req: Request<Record<string, unknown>, Record<string, unknown>, VerdictRequestBody>, res: Response, next: NextFunction) => {
-  const key = req.body.key
+  const key = String(req.body.key).replace(/[^a-zA-Z0-9_-]/g, '') // Sanitize key to prevent path traversal
+  if (!key || key.length === 0) {
+    res.status(400).json({ status: 'error', error: 'Invalid key' })
+    return
+  }
   let snippetData
   try {
     snippetData = await retrieveCodeSnippet(key)
@@ -90,8 +94,11 @@ exports.checkVulnLines = () => async (req: Request<Record<string, unknown>, Reco
   const selectedLines: number[] = req.body.selectedLines
   const verdict = getVerdict(vulnLines, neutralLines, selectedLines)
   let hint
-  if (fs.existsSync('./data/static/codefixes/' + key + '.info.yml')) {
-    const codingChallengeInfos = yaml.load(fs.readFileSync('./data/static/codefixes/' + key + '.info.yml', 'utf8'))
+  const basePath = path.resolve('./data/static/codefixes/')
+  const infoPath = path.resolve('./data/static/codefixes/', key + '.info.yml')
+  // Validate path stays within codefixes directory
+  if (fs.existsSync(infoPath) && !infoPath.includes('..') && infoPath.startsWith(basePath)) {
+    const codingChallengeInfos = yaml.load(fs.readFileSync(infoPath, 'utf8'))
     if (codingChallengeInfos?.hints) {
       if (accuracy.getFindItAttempts(key) > codingChallengeInfos.hints.length) {
         if (vulnLines.length === 1) {

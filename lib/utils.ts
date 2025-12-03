@@ -127,8 +127,8 @@ export const extractFilename = (url: string) => {
 
 export const downloadToFile = async (url: string, dest: string) => {
   try {
-    const data = await download(url)
-    fs.writeFileSync(dest, data)
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    fs.writeFileSync(dest, response.data)
   } catch (err) {
     logger.warn('Failed to download ' + url + ' (' + getErrorMessage(err) + ')')
   }

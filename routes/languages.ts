@@ -23,6 +23,10 @@ module.exports = function getLanguageList () { // TODO Refactor and extend to al
           next(new Error(`Unable to read i18n directory: ${err.message}`))
         }
         languageFiles.forEach((fileName) => {
+          // Validate filename to prevent path traversal
+          if (!fileName || fileName.includes('..') || fileName.includes('/') || fileName.includes('\\') || !fileName.endsWith('.json')) {
+            return // Skip invalid filenames
+          }
           // eslint-disable-next-line @typescript-eslint/no-misused-promises
           fs.readFile('frontend/dist/frontend/assets/i18n/' + fileName, 'utf-8', async (err, content) => {
             if (err != null) {
