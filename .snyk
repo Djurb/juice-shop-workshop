@@ -1,7 +1,0 @@
-exclude:
-  global:
-    - test/**
-    - "./**/*.spec.js"
-    - "./**/*.component.spec.js"
-    - "./**/*.spec.ts"
-    - "./**/*.component.spec.ts"
