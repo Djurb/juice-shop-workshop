@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 import express, { type NextFunction, type Request, type Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { SecurityAnswerModel } from '../models/securityAnswer'
 import { UserModel } from '../models/user'
@@ -14,8 +15,15 @@ const challenges = require('../data/datacache').challenges
 const challengeUtils = require('../lib/challengeUtils')
 const router = express.Router()
 
+// Rate limiter for expensive file operations
+const fileOperationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+})
+
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
-router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', fileOperationLimiter, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const loggedInUser = insecurity.authenticatedUsers.get(req.cookies.token)
   if (!loggedInUser) {
     next(new Error('Blocked illegal activity by ' + req.socket.remoteAddress))
