@@ -16,10 +16,22 @@ spec:
         app: snyk-juice-shop
     spec:
       containers:
-      - name: juice-shop
-        image: troysnyk/snyk-juice-shop:linux
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3000
-        securityContext:
-          privileged: true
+        - name: juice-shop
+          image: troysnyk/snyk-juice-shop:linux
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 3000
+          securityContext:
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL

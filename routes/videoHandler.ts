@@ -4,6 +4,7 @@
  */
 
 import fs = require('fs')
+import rateLimit = require('express-rate-limit')
 import { type Request, type Response } from 'express'
 import challengeUtils = require('../lib/challengeUtils')
 import config from 'config'
@@ -48,8 +49,15 @@ exports.getVideo = () => {
 }
 
 exports.promotionVideo = () => {
+  const limiter = rateLimit({
+    windowMs: 30 * 60 * 1000, // 30 minutes
+    limit: 5, // Limit each IP to 5 requests per windowMs
+  })
+
   return (req: Request, res: Response) => {
-    fs.readFile('views/promotionVideo.pug', function (err, buf) {
+    limiter(req, res, () => {
+      fs.readFile('views/promotionVideo.pug', function (err, buf) {
+      })
       if (err != null) throw err
       let template = buf.toString()
       const subs = getSubsFromFile()
